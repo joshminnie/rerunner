@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+
+# Display documentation
+if ARGV.include?('--help')
+  puts <<-MAN
+Usage: rerun [options]
+
+  Options:
+    --files        Returns only file results without specified line numbers
+
+    --help         Displays this help documentation
+MAN
+  exit
+end
+
+class TestLine
+  attr_reader :line
+  def initialize(line)
+    @line = line
+  end
+
+  def file
+    line.slice(line.index(' ') + 1..line.index(':') - 1)
+  end
+
+  def line_number
+    line.slice(line.index(':') + 1..line.index(' # ') - 1)
+  end
+
+  def to_s
+    "#{file}:#{line_number}"
+  end
+
+  def to_a
+    [file, line_number]
+  end
+end
+
+
+filename = ARGV[0]
+files_only = ARGV.include?('--files')
+
+f = File.new(ARGV[0])
+lines = f.readlines
+
+output = {}
+lines.each do |line|
+  test_line = TestLine.new(line)
+  (output[test_line.file] ||= []) << test_line.line_number
+end
+
+puts output.map{ |key, values| files_only ? key : "#{key}:#{values.join(':')}" }.join(' ')
